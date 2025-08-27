@@ -20,7 +20,7 @@
     "redis": "4.7.1"
   },
   "devDependencies": {
-    "@types/connect-redis": "0.0.23",
+    "@types/connect-redis": "^0.0.23",
     "@types/cors": "2.8.19",
     "@types/express": "4.17.23",
     "@types/express-session": "1.18.2",

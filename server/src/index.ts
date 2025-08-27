@@ -1,14 +1,14 @@
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import session, { SessionOptions } from "express-session";
 import passport from "passport";
 import { Strategy as SteamStrategy } from "passport-steam";
 import cors from "cors";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { createClient } from "redis";
-import RedisStore from "connect-redis";
+import { createClient, RedisClientType } from "redis";
+import connectRedis from "connect-redis"; // Импортируем как функцию
+import session, { SessionOptions } from "express-session"; // Импортируем SessionOptions
 
 import User from "./models/User";
 import Match from "./models/Match";
@@ -22,9 +22,8 @@ declare module "express-session" {
   }
 }
 
-/** Опционально: расширим тип пользователя (не обязательно) */
+/** Расширяем тип пользователя */
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface User {
       steamId: string;
@@ -34,7 +33,7 @@ declare global {
   }
 }
 
-/** Повторы для axios */
+/** Настройка axios с повторными попытками */
 axiosRetry(axios, {
   retries: 3,
   retryDelay: (retryCount) => retryCount * 1000,
@@ -53,12 +52,10 @@ interface SteamProfile {
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
-
-/** Рекомендуется за прокси (Railway/Nginx) */
-app.set("trust proxy", 1);
+app.set("trust proxy", 1); // за прокси (Railway/Nginx)
 
 /** Redis client */
-const redisClient = createClient({
+const redisClient: RedisClientType = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
 redisClient.on("error", (err) => console.error("Redis error:", err));
@@ -80,17 +77,21 @@ app.use(
 
 app.use(express.json());
 
-/** Сессии (connect-redis v7: используем класс RedisStore напрямую) */
+/** Сессии (connect-redis v7) */
+const RedisStoreConstructor = connectRedis(session); // Получаем конструктор
+const sessionStore = new RedisStoreConstructor({
+  client: redisClient,
+  prefix: "sess:",
+}); // Создаем экземпляр
+
+// Используем тип SessionOptions
 const sessionOptions: SessionOptions = {
-  store: new RedisStore({
-    client: redisClient,
-    prefix: "sess:",
-  }),
+  store: sessionStore, // Используем созданный экземпляр
   secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // если включишь HTTPS за прокси, можно поставить true
+    secure: false,
     httpOnly: true,
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
@@ -115,13 +116,13 @@ passport.serializeUser((user: any, done) => {
 passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await User.findOne({ steamId: id });
-    done(null, (user as any) || null);
+    done(null, user || null);
   } catch (err) {
     done(err, null);
   }
 });
 
-/** Корректно формируем URL'ы для Steam OpenID */
+/** Steam OpenID */
 const serverUrl = (
   process.env.SERVER_URL || `http://localhost:${port}`
 ).replace(/\/$/, "");
