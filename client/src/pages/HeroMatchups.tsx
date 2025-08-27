@@ -26,7 +26,7 @@ function HeroMatchups() {
           `https://api.opendota.com/api/heroes/${heroId}/matchups`
         );
         const data = response.data;
-        const matchupsWithWinRate = data.map((matchup: any) => ({
+        const matchupsWithWinRate = data.map((matchup) => ({
           hero_id: matchup.hero_id,
           games_played: matchup.games_played,
           wins: matchup.wins,
