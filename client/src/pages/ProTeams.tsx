@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 interface Player {
   name: string;
-  steamId?: string;
+  steamId: string; // теперь всегда string
   teamName: string;
   teamTag?: string;
 }
@@ -14,6 +14,8 @@ function ProTeams() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const teamsData = [
 
   // Статический список команд и их актуальных составов
   const teamsData = [
@@ -216,21 +218,19 @@ function ProTeams() {
       setLoading(true);
       setError("");
       try {
-        // Получаем данные из API
         const response = await axios.get(
           "https://api.opendota.com/api/proPlayers"
         );
-        const apiPlayers = response.data;
+        const apiPlayers = response.data as any[];
 
-        // Преобразуем статический список в массив игроков с поиском steamId
-        const allPlayers = teamsData.flatMap((team) =>
+        const allPlayers: Player[] = teamsData.flatMap((team) =>
           team.players.map((playerName) => {
             const matchedPlayer = apiPlayers.find(
               (p: any) => p.name === playerName || p.personaname === playerName
             );
             return {
               name: playerName,
-              steamId: matchedPlayer ? matchedPlayer.steamid : undefined,
+              steamId: matchedPlayer?.steamid ?? "", // всегда string
               teamName: team.name,
               teamTag: team.tag,
             };
@@ -249,12 +249,9 @@ function ProTeams() {
     fetchProPlayers();
   }, []);
 
-  const handlePlayerClick = (steamId?: string) => {
-    if (steamId) {
-      navigate(`/search?steamId=${steamId}`);
-    } else {
-      console.log("SteamID not available for this player");
-    }
+  const handlePlayerClick = (steamId: string) => {
+    if (!steamId) return;
+    navigate(`/search?steamId=${steamId}`);
   };
 
   if (loading)
@@ -270,20 +267,17 @@ function ProTeams() {
       </div>
     );
 
-  // Группировка игроков по командам для отображения
   const teams = players.reduce((acc, player) => {
-    if (player.teamName) {
-      if (!acc[player.teamName]) {
-        acc[player.teamName] = {
-          name: player.teamName,
-          tag: player.teamTag,
-          players: [],
-        };
-      }
-      acc[player.teamName].players.push(player);
+    if (!acc[player.teamName]) {
+      acc[player.teamName] = {
+        name: player.teamName,
+        tag: player.teamTag,
+        players: [],
+      };
     }
+    acc[player.teamName].players.push(player);
     return acc;
-  }, {} as { [key: string]: { name: string; tag: string; players: Player[] } });
+  }, {} as { [key: string]: { name: string; tag?: string; players: Player[] } });
 
   return (
     <div className="min-h-screen p-4">
