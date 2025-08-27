@@ -33,11 +33,13 @@ function HeroMatchups() {
           win_rate: (matchup.wins / matchup.games_played) * 100,
         }));
         const goodAgainst = [...matchupsWithWinRate]
-          .sort((a, b) => b.win_rate - a.win_rate)
+          .sort((a: Matchup, b: Matchup) => b.win_rate - a.win_rate)
           .slice(0, 5);
+
         const badAgainst = [...matchupsWithWinRate]
-          .sort((a, b) => a.win_rate - b.win_rate)
+          .sort((a: Matchup, b: Matchup) => a.win_rate - b.win_rate)
           .slice(0, 5);
+
         const allMatchups = [
           ...new Map(matchupsWithWinRate.map((m) => [m.hero_id, m])).values(),
         ].sort((a, b) => b.win_rate - a.win_rate);
