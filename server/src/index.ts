@@ -1,39 +1,33 @@
-import express, { RequestHandler } from "express";
+import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { createClient } from "redis";
-import { RedisClientType } from "redis";
-import RedisStore from "connect-redis";
-import passport from "passport";
 import session from "express-session";
+import passport from "passport";
 import { Strategy as SteamStrategy } from "passport-steam";
 import cors from "cors";
 import axios from "axios";
 import axiosRetry from "axios-retry";
+import { createClient } from "redis";
+import RedisStore from "connect-redis";
 import User from "./models/User";
 import Match from "./models/Match";
+
+dotenv.config();
 
 // Расширение типа Session для поддержки passport
 declare module "express-session" {
   interface Session {
-    passport?: {
-      user: string;
-    };
+    passport?: { user: string };
   }
 }
-
-dotenv.config();
 
 // Настройка axios с повторными попытками
 axiosRetry(axios, {
   retries: 3,
   retryDelay: (retryCount) => retryCount * 1000,
-  retryCondition: (error) => {
-    return (
-      axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-      error.response?.status === 429
-    );
-  },
+  retryCondition: (error) =>
+    axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+    error.response?.status === 429,
 });
 
 interface SteamProfile {
@@ -47,14 +41,15 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Redis клиент
-const redisClient: RedisClientType = createClient({
+const redisClient = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
 redisClient.on("error", (err) => console.error("Redis error:", err));
+
 redisClient
   .connect()
   .then(() => console.log("Redis connected"))
-  .catch((err) => console.error("Redis connection error:", err));
+  .catch(console.error);
 
 // Middleware
 app.use(
@@ -65,10 +60,11 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json());
 app.use(
   session({
-    store: new RedisStore({ client: redisClient, prefix: "sess:" }), // Исправленный синтаксис
+    store: new RedisStore({ client: redisClient, prefix: "sess:" }), // рабочий вариант для connect-redis v7
     secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
     resave: false,
     saveUninitialized: false,
@@ -80,16 +76,9 @@ app.use(
     },
   })
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Логирование запросов
-app.use((req, res, next) => {
-  console.log(
-    `Request: ${req.method} ${req.url} - Query: ${JSON.stringify(req.query)}`
-  );
-  next();
-});
 
 // MongoDB
 mongoose
@@ -98,23 +87,13 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Passport
-passport.serializeUser((user: any, done) => {
-  console.log("Serializing user:", user);
-  done(null, user.steamId);
-});
+passport.serializeUser((user: any, done) => done(null, user.steamId));
 
 passport.deserializeUser(async (id: string, done) => {
   try {
-    console.log("Deserializing ID:", id);
     const user = await User.findOne({ steamId: id });
-    if (!user) {
-      console.log("User not found for steamId:", id);
-      return done(null, null);
-    }
-    console.log("Deserialized user:", user);
-    done(null, user);
+    done(null, user || null);
   } catch (err) {
-    console.error("Deserialize error:", err);
     done(err, null);
   }
 });
@@ -126,16 +105,9 @@ passport.use(
       realm: "http://localhost:5000/",
       apiKey: process.env.STEAM_API_KEY || "",
     },
-    async (
-      identifier: string,
-      profile: SteamProfile,
-      done: (err: any, user?: any) => void
-    ) => {
-      console.log("Steam auth callback, profile:", profile);
+    async (identifier, profile: SteamProfile, done) => {
       try {
-        if (!profile.id) {
-          throw new Error("Invalid Steam profile");
-        }
+        if (!profile.id) throw new Error("Invalid Steam profile");
         const user = await User.findOneAndUpdate(
           { steamId: profile.id },
           {
@@ -145,10 +117,8 @@ passport.use(
           },
           { upsert: true, new: true, runValidators: true }
         );
-        console.log("Updated/Saved user:", user);
         return done(null, user);
       } catch (err) {
-        console.error("Steam auth error:", err);
         return done(err);
       }
     }
@@ -163,65 +133,28 @@ app.get("/auth/steam", passport.authenticate("steam"));
 app.get(
   "/auth/steam/return",
   passport.authenticate("steam", { failureRedirect: "http://localhost:5173/" }),
-  (req, res) => {
-    console.log("Steam auth return, user:", req.user);
-    if (!req.user) {
-      console.error("No user after authentication");
-      return res.status(401).json({ error: "Authentication failed" });
-    }
-    res.redirect("http://localhost:5173/profile");
-  }
+  (req, res) => res.redirect("http://localhost:5173/profile")
 );
 
 app.get("/auth/logout", (req, res) => {
-  console.log("Logout request received, session:", req.session);
   req.logout((err) => {
-    if (err) {
-      console.error("Logout error:", err);
-      return res.status(500).json({ error: "Failed to logout" });
-    }
+    if (err) return res.status(500).json({ error: "Failed to logout" });
     req.session.destroy((err) => {
-      if (err) {
-        console.error("Session destroy error:", err);
+      if (err)
         return res.status(500).json({ error: "Failed to destroy session" });
-      }
-      console.log("Session destroyed");
       res.json({ message: "Logged out successfully" });
     });
   });
 });
 
 app.get("/api/user", (req, res) => {
-  console.log(
-    "User request - Session:",
-    req.session,
-    "Passport user:",
-    req.session?.passport?.user,
-    "Cookies:",
-    req.cookies
-  );
-  if (req.user) {
-    console.log("Returning user from req.user:", req.user);
-    res.json(req.user);
-  } else if (req.session?.passport?.user) {
+  if (req.user) return res.json(req.user);
+  if (req.session?.passport?.user) {
     User.findOne({ steamId: req.session.passport.user })
-      .then((user) => {
-        if (user) {
-          console.log("Found user by steamId from session:", user);
-          req.user = user;
-          res.json(user);
-        } else {
-          console.log("No user found for steamId:", req.session.passport.user);
-          res.json(null); // Возвращаем null вместо 401
-        }
-      })
-      .catch((err) => {
-        console.error("Error finding user:", err);
-        res.status(500).json({ error: "Server error" });
-      });
+      .then((user) => res.json(user || null))
+      .catch(() => res.status(500).json({ error: "Server error" }));
   } else {
-    console.log("No user or session data, returning null");
-    res.json(null); // Возвращаем null вместо 401
+    res.json(null);
   }
 });
 
