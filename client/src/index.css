@@ -18,29 +18,29 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f4f4f4;
-  color: #000000;
+  background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+  color: #333333;
   font-family: "Segoe UI", sans-serif;
   overflow-x: hidden;
   @apply transition-colors duration-200;
 }
 
 body.dark {
-  background: #1d1d1d;
+  background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
   color: #ffffff;
 }
 
 @layer components {
   .metro-card {
-    @apply bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-300 dark:border-gray-800 shadow-lg;
   }
 
   .metro-button {
-    @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 active:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200;
+    @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200;
   }
 
   .metro-input {
-    @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-black dark:text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+    @apply bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
   }
 
   .metro-nav-button {
@@ -48,19 +48,45 @@ body.dark {
   }
 
   .metro-nav-button.active {
-    @apply bg-blue-500 text-white;
+    @apply bg-blue-600 text-white;
   }
 
   .metro-footer {
-    @apply bg-gray-200 dark:bg-gray-800 p-4 border-t border-gray-300 dark:border-gray-700 text-center;
+    @apply bg-white dark:bg-gray-900 p-4 border-t border-gray-300 dark:border-gray-800 text-center;
   }
 
   .metro-footer a {
     @apply text-blue-600 dark:text-blue-400 hover:underline;
   }
+
+  .hitech-card {
+    @apply metro-card bg-gradient-to-br from-gray-200 dark:from-gray-800 to-gray-300 dark:to-gray-900 border-neon;
+  }
+
+  .hitech-button {
+    @apply metro-button bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 active:from-blue-800 active:to-purple-800 text-white shadow-neon;
+  }
+
+  .hitech-header {
+    @apply text-3xl font-[Orbitron] text-blue-600 dark:text-blue-400 mb-4 text-center neon-text;
+  }
+
+  .neon-text {
+    @apply text-transparent bg-clip-text animate-pulse;
+    background: linear-gradient(90deg, #00ffff 0%, #ff00ff 100%);
+    -webkit-background-clip: text;
+  }
+
+  .border-neon {
+    @apply border-2 border-blue-500 dark:border-blue-400;
+  }
+
+  .shadow-neon {
+    @apply shadow-[0_0_10px_#00ffff,0_0_20px_#ff00ff] dark:shadow-[0_0_10px_#00ccff,0_0_20px_#cc00ff];
+  }
 }
 
-/* Удаляем неоновые анимации */
+/* Удаляем неоновые анимации, если были */
 .text-neon-blue,
 .text-neon-pink,
 .bg-neon-blue,

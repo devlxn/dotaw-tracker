@@ -14,6 +14,7 @@ import Matches from "./pages/Matches";
 import Search from "./pages/Search";
 import Heroes from "./pages/Heroes";
 import MatchDetails from "./pages/MatchDetails";
+import ProTeams from "./pages/ProTeams"; // Импортируем новый компонент
 
 interface User {
   steamId: string;
@@ -162,6 +163,14 @@ function MainApp() {
               Heroes
             </button>
             <button
+              onClick={() => navigate("/pro-teams")} // Добавлена кнопка для ProTeams
+              className={`metro-nav-button ${
+                location.pathname === "/pro-teams" ? "active" : ""
+              }`}
+            >
+              Pro Teams
+            </button>
+            <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
               aria-label="Toggle theme"
@@ -238,6 +247,8 @@ function MainApp() {
           <Route path="/search" element={<Search />} />
           <Route path="/heroes" element={<Heroes />} />
           <Route path="/match/:matchId" element={<MatchDetails />} />
+          <Route path="/pro-teams" element={<ProTeams />} />{" "}
+          {/* Новый маршрут */}
         </Routes>
       </main>
 

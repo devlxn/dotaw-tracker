@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { heroes } from "../data/heroes";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 interface Match {
   match_id: number;
@@ -30,6 +30,7 @@ function Search() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const convertSteamIdToAccountId = (steamId: string): string => {
     const STEAM_ID_BASE = BigInt("76561197960265728");
@@ -65,6 +66,49 @@ function Search() {
     ];
     return `${ranks[tier - 1]} ${subTier}` || "Unranked";
   };
+
+  // Автоматическая загрузка данных при наличии steamId в URL
+  useEffect(() => {
+    const steamIdFromUrl = searchParams.get("steamId");
+    if (steamIdFromUrl && isValidSteamId(steamIdFromUrl)) {
+      setLoading(true);
+      setError("");
+      setPlayer(null);
+      setMatches([]);
+      setPage(1);
+
+      const fetchPlayerData = async () => {
+        try {
+          const accountId = convertSteamIdToAccountId(steamIdFromUrl);
+          const response = await axios.get(
+            `http://localhost:5000/api/search?query=${accountId}`,
+            { withCredentials: true }
+          );
+          const data = response.data;
+
+          if (data && data.length === 1) {
+            const playerData = data[0];
+            const rankResponse = await axios.get(
+              `https://api.opendota.com/api/players/${accountId}`
+            );
+            const rankTier = rankResponse.data?.rank_tier;
+            setPlayer({ ...playerData, rankTier });
+            await fetchMatches(playerData.steamId, 1);
+          } else {
+            setError("Player not found with the provided SteamID");
+          }
+        } catch (err: unknown) {
+          const message =
+            err instanceof Error ? err.message : "Failed to fetch player data";
+          setError(`Error: ${message}`);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchPlayerData();
+    }
+  }, [searchParams]); // Зависимость от searchParams для перезагрузки при изменении URL
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -322,11 +366,12 @@ function Search() {
                               : "text-red-600 dark:text-red-400 p-2"
                           }
                         >
-                          Result:{" "}
-                          {(match.radiant_win && match.player_slot < 128) ||
-                          (!match.radiant_win && match.player_slot >= 128)
-                            ? "Win"
-                            : "Loss"}
+                          Result:
+                          {" " +
+                            ((match.radiant_win && match.player_slot < 128) ||
+                            (!match.radiant_win && match.player_slot >= 128)
+                              ? "Win"
+                              : "Loss")}
                         </p>
                       </Link>
                     );

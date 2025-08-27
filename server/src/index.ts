@@ -68,7 +68,7 @@ app.use(
 app.use(express.json());
 app.use(
   session({
-    store: new RedisStore({ client: redisClient as any, prefix: "sess:" }),
+    store: new RedisStore({ client: redisClient, prefix: "sess:" }), // Исправленный синтаксис
     secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
     resave: false,
     saveUninitialized: false,
