@@ -1,32 +1,46 @@
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import session from "express-session";
+import session, { SessionOptions } from "express-session";
 import passport from "passport";
 import { Strategy as SteamStrategy } from "passport-steam";
 import cors from "cors";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import { createClient } from "redis";
-import connectRedis from "connect-redis";
+import RedisStore from "connect-redis";
+
 import User from "./models/User";
 import Match from "./models/Match";
 
 dotenv.config();
 
-// Расширение типа Session для поддержки passport
+/** Расширяем типы express-session для passport */
 declare module "express-session" {
-  interface Session {
+  interface SessionData {
     passport?: { user: string };
   }
 }
 
-// Настройка axios с повторными попытками
+/** Опционально: расширим тип пользователя (не обязательно) */
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface User {
+      steamId: string;
+      displayName?: string;
+      avatar?: string | null;
+    }
+  }
+}
+
+/** Повторы для axios */
 axiosRetry(axios, {
   retries: 3,
   retryDelay: (retryCount) => retryCount * 1000,
   retryCondition: (error) =>
-    axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+    axiosRetry.isNetworkError(error) ||
+    axiosRetry.isIdempotentRequestError(error) ||
     error.response?.status === 429,
 });
 
@@ -38,44 +52,26 @@ interface SteamProfile {
 }
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = Number(process.env.PORT) || 5000;
 
-// Redis клиент
+/** Рекомендуется за прокси (Railway/Nginx) */
+app.set("trust proxy", 1);
+
+/** Redis client */
 const redisClient = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
 redisClient.on("error", (err) => console.error("Redis error:", err));
-
 redisClient
   .connect()
   .then(() => console.log("Redis connected"))
-  .catch(console.error);
+  .catch((err) => console.error("Redis connection error:", err));
 
-// connect-redis v7+
-import RedisStore from "connect-redis";
-
-app.use(
-  session({
-    store: new RedisStore({
-      client: redisClient as any,
-      prefix: "sess:",
-    }),
-    secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  })
-);
-
-// Middleware
+/** CORS */
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: CLIENT_URL,
     credentials: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -83,53 +79,65 @@ app.use(
 );
 
 app.use(express.json());
-app.use(
-  session({
-    store: new (RedisStore as any)({
-      client: redisClient,
-      prefix: "sess:",
-    }),
-    secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  })
-);
 
+/** Сессии (connect-redis v7: используем класс RedisStore напрямую) */
+const sessionOptions: SessionOptions = {
+  store: new RedisStore({
+    client: redisClient,
+    prefix: "sess:",
+  }),
+  secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // если включишь HTTPS за прокси, можно поставить true
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+  },
+};
+app.use(session(sessionOptions));
+
+/** Passport */
 app.use(passport.initialize());
 app.use(passport.session());
 
-// MongoDB
+/** MongoDB */
 mongoose
   .connect(process.env.MONGODB_URI || "")
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Passport
-passport.serializeUser((user: any, done) => done(null, user.steamId));
+passport.serializeUser((user: any, done) => {
+  done(null, user.steamId);
+});
 
 passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await User.findOne({ steamId: id });
-    done(null, user || null);
+    done(null, (user as any) || null);
   } catch (err) {
     done(err, null);
   }
 });
 
+/** Корректно формируем URL'ы для Steam OpenID */
+const serverUrl = (
+  process.env.SERVER_URL || `http://localhost:${port}`
+).replace(/\/$/, "");
+
 passport.use(
   new SteamStrategy(
     {
-      returnURL: "http://localhost:5000/auth/steam/return",
-      realm: "http://localhost:5000/",
+      returnURL: `${serverUrl}/auth/steam/return`,
+      realm: `${serverUrl}/`,
       apiKey: process.env.STEAM_API_KEY || "",
     },
-    async (identifier, profile: SteamProfile, done) => {
+    async (
+      _identifier: string,
+      profile: SteamProfile,
+      done: (err: any, user?: any) => void
+    ) => {
       try {
         if (!profile.id) throw new Error("Invalid Steam profile");
         const user = await User.findOneAndUpdate(
@@ -149,19 +157,19 @@ passport.use(
   )
 );
 
-// Routes
-app.get("/", (req, res) => res.send("Dota 2 Tracker Backend"));
+/** Routes */
+app.get("/", (_req, res) => res.send("Dota 2 Tracker Backend"));
 
 app.get("/auth/steam", passport.authenticate("steam"));
 
 app.get(
   "/auth/steam/return",
-  passport.authenticate("steam", { failureRedirect: "http://localhost:5173/" }),
-  (req, res) => res.redirect("http://localhost:5173/profile")
+  passport.authenticate("steam", { failureRedirect: `${CLIENT_URL}/` }),
+  (_req, res) => res.redirect(`${CLIENT_URL}/profile`)
 );
 
 app.get("/auth/logout", (req, res) => {
-  req.logout((err) => {
+  (req as any).logout((err: any) => {
     if (err) return res.status(500).json({ error: "Failed to logout" });
     req.session.destroy((err) => {
       if (err)
@@ -173,8 +181,9 @@ app.get("/auth/logout", (req, res) => {
 
 app.get("/api/user", (req, res) => {
   if (req.user) return res.json(req.user);
-  if (req.session?.passport?.user) {
-    User.findOne({ steamId: req.session.passport.user })
+  const steamId = req.session?.passport?.user;
+  if (steamId) {
+    User.findOne({ steamId })
       .then((user) => res.json(user || null))
       .catch(() => res.status(500).json({ error: "Server error" }));
   } else {
@@ -202,21 +211,16 @@ app.get(
       if (!/^\d{17}$/.test(steamId)) {
         return res.status(400).json({ error: "Invalid SteamID format" });
       }
+
       const STEAM_ID_BASE = BigInt("76561197960265728");
       const accountId = String(BigInt(steamId) - STEAM_ID_BASE);
       const cacheKey = `matches:${steamId}:page:${page}:limit:${limit}`;
 
       const cached = await redisClient.get(cacheKey);
       if (cached !== null) {
-        console.log(
-          `Returning cached matches for SteamID: ${steamId}, Page: ${page}`
-        );
         return res.json(JSON.parse(cached));
       }
 
-      console.log(
-        `Fetching matches from OpenDota for SteamID: ${steamId} (AccountID: ${accountId}, Page: ${page})`
-      );
       const response = await axios.get(
         `https://api.opendota.com/api/players/${accountId}/matches`,
         { params: { limit: 100 }, timeout: 5000 }
@@ -224,10 +228,6 @@ app.get(
       const allMatches = response.data;
 
       if (!Array.isArray(allMatches)) {
-        console.log(
-          `Invalid response format for AccountID: ${accountId}`,
-          allMatches
-        );
         return res
           .status(500)
           .json({ error: "Invalid response format from OpenDota" });
@@ -267,16 +267,8 @@ app.get(
       };
 
       await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
-      console.log(
-        `Cached ${paginatedMatches.length} matches for SteamID: ${steamId}, Page: ${page}`
-      );
       res.json(result);
     } catch (err: any) {
-      console.error(`Error fetching matches for SteamID: ${steamId}`, {
-        message: err.message,
-        status: err.response?.status,
-        data: err.response?.data,
-      });
       res
         .status(500)
         .json({ error: "Failed to fetch matches", details: err.message });
@@ -295,32 +287,23 @@ app.get(
       const cacheKey = `match:${matchId}`;
       const cached = await redisClient.get(cacheKey);
       if (cached) {
-        console.log(`Returning cached match data for MatchID: ${matchId}`);
         return res.json(JSON.parse(cached));
       }
 
-      console.log(`Fetching match data from OpenDota for MatchID: ${matchId}`);
       const response = await axios.get(
         `https://api.opendota.com/api/matches/${matchId}`,
         { timeout: 5000 }
       );
       const match = response.data;
       if (!match.match_id) {
-        console.log(`Invalid match data for MatchID: ${matchId}`);
         return res
           .status(500)
           .json({ error: "Invalid match data from OpenDota" });
       }
 
       await redisClient.setEx(cacheKey, 3600, JSON.stringify(match));
-      console.log(`Cached match data for MatchID: ${matchId}`);
       res.json(match);
     } catch (err: any) {
-      console.error(`Error fetching match data for MatchID: ${matchId}`, {
-        message: err.message,
-        status: err.response?.status,
-        data: err.response?.data,
-      });
       res
         .status(500)
         .json({ error: "Failed to fetch match data", details: err.message });
@@ -338,31 +321,23 @@ app.get(
 
     try {
       const queryStr = String(query).trim();
-      console.log(`Processing query (AccountID): ${queryStr}`);
       const cacheKey = `search:${queryStr.toLowerCase()}`;
       const cached = await redisClient.get(cacheKey);
       if (cached) {
-        console.log(`Returning cached search for AccountID: ${queryStr}`);
         return res.json(JSON.parse(cached));
       }
 
       const STEAM_ID_BASE = BigInt("76561197960265728");
       let result: any = null;
 
-      // Поиск только по AccountID
       if (/^\d+$/.test(queryStr)) {
         const accountId = queryStr;
         const steamId = String(BigInt(accountId) + STEAM_ID_BASE);
-        console.log(`Searching AccountID: ${accountId}, SteamID: ${steamId}`);
 
         try {
           const response = await axios.get(
             `https://api.opendota.com/api/players/${accountId}`,
             { timeout: 5000 }
-          );
-          console.log(
-            `OpenDota response status: ${response.status}, data:`,
-            response.data
           );
           if (response.data && response.data.profile) {
             result = [
@@ -383,34 +358,19 @@ app.get(
               },
               { upsert: true }
             );
-            console.log(`Saved profile to MongoDB for SteamID: ${steamId}`);
-          } else {
-            console.log(
-              `No valid profile found in OpenDota for AccountID: ${accountId}`
-            );
           }
-        } catch (err: any) {
-          console.error(`OpenDota error for AccountID: ${accountId}`, {
-            status: err.response?.status,
-            message: err.message,
-            data: err.response?.data,
-          });
+        } catch (err) {
+          // глушим 404 и сетевые проблемы
         }
       }
 
       if (!result || (Array.isArray(result) && result.length === 0)) {
-        console.log(`No players found for AccountID: ${queryStr}`);
         return res.status(404).json({ error: "Player not found" });
       }
 
       await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
-      console.log(`Search result cached for AccountID: ${queryStr}`);
       res.json(result);
     } catch (err: any) {
-      console.error("Search error:", {
-        message: err.message,
-        stack: err.stack,
-      });
       res
         .status(500)
         .json({ error: "Failed to search player", details: err.message });
@@ -419,5 +379,5 @@ app.get(
 );
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on ${serverUrl}`);
 });
