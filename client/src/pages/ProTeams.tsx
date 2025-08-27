@@ -16,9 +16,6 @@ function ProTeams() {
   const navigate = useNavigate();
 
   const teamsData = [
-
-  // Статический список команд и их актуальных составов
-  const teamsData = [
     {
       name: "AVULUS",
       tag: "AVL",
