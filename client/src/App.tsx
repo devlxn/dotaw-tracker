@@ -14,7 +14,8 @@ import Matches from "./pages/Matches";
 import Search from "./pages/Search";
 import Heroes from "./pages/Heroes";
 import MatchDetails from "./pages/MatchDetails";
-import ProTeams from "./pages/ProTeams"; // Импортируем новый компонент
+import ProTeams from "./pages/ProTeams";
+import HeroMatchups from "./pages/HeroMatchups";
 
 interface User {
   steamId: string;
@@ -53,6 +54,7 @@ function MainApp() {
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "light"
   );
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -119,26 +121,59 @@ function MainApp() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-gray-100 dark:bg-gray-900 p-4 border-b border-gray-200 dark:border-gray-800">
+      <header className="bg-gray-100 dark:bg-gray-900 p-4 border-b border-gray-200 dark:border-gray-800 z-50">
         <nav className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             to="/"
-            className="text-lg font-semibold text-blue-600 hover:text-blue-800"
+            className="text-lg sm:text-xl font-semibold text-blue-600 hover:text-blue-800"
           >
             Dota 2 Tracker
           </Link>
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="sm:hidden p-2 text-gray-900 dark:text-gray-100 focus:outline-none z-50"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16m-7 6h7"
+              />
+            </svg>
+          </button>
+          <div
+            className={`${
+              isMenuOpen ? "block" : "hidden"
+            } sm:flex sm:items-center gap-2 w-full sm:w-auto ${
+              isMenuOpen
+                ? "absolute top-16 left-0 bg-gray-100 dark:bg-gray-900 w-full p-4 z-40"
+                : ""
+            }`}
+          >
             <button
-              onClick={() => navigate("/search")}
-              className={`metro-nav-button ${
+              onClick={() => {
+                navigate("/search");
+                setIsMenuOpen(false);
+              }}
+              className={`metro-nav-button w-full sm:w-auto mb-2 sm:mb-0 ${
                 location.pathname === "/search" ? "active" : ""
               }`}
             >
               Search
             </button>
             <button
-              onClick={() => navigate("/profile")}
-              className={`metro-nav-button ${
+              onClick={() => {
+                navigate("/profile");
+                setIsMenuOpen(false);
+              }}
+              className={`metro-nav-button w-full sm:w-auto mb-2 sm:mb-0 ${
                 location.pathname === "/profile" ? "active" : ""
               }`}
               disabled={!user}
@@ -146,8 +181,11 @@ function MainApp() {
               Profile
             </button>
             <button
-              onClick={() => navigate("/matches")}
-              className={`metro-nav-button ${
+              onClick={() => {
+                navigate("/matches");
+                setIsMenuOpen(false);
+              }}
+              className={`metro-nav-button w-full sm:w-auto mb-2 sm:mb-0 ${
                 location.pathname === "/matches" ? "active" : ""
               }`}
               disabled={!user}
@@ -155,39 +193,52 @@ function MainApp() {
               Matches
             </button>
             <button
-              onClick={() => navigate("/heroes")}
-              className={`metro-nav-button ${
+              onClick={() => {
+                navigate("/heroes");
+                setIsMenuOpen(false);
+              }}
+              className={`metro-nav-button w-full sm:w-auto mb-2 sm:mb-0 ${
                 location.pathname === "/heroes" ? "active" : ""
               }`}
             >
               Heroes
             </button>
             <button
-              onClick={() => navigate("/pro-teams")} // Добавлена кнопка для ProTeams
-              className={`metro-nav-button ${
+              onClick={() => {
+                navigate("/pro-teams");
+                setIsMenuOpen(false);
+              }}
+              className={`metro-nav-button w-full sm:w-auto mb-2 sm:mb-0 ${
                 location.pathname === "/pro-teams" ? "active" : ""
               }`}
             >
               Pro Teams
             </button>
             <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+              onClick={() => {
+                toggleTheme();
+                setIsMenuOpen(false);
+              }}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 mb-2 sm:mb-0"
               aria-label="Toggle theme"
             >
               {theme === "light" ? "🌙" : "☀️"}
             </button>
             {user ? (
               <button
-                onClick={handleLogout}
-                className="metro-button bg-red-500 hover:bg-red-600"
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                className="metro-button bg-red-500 hover:bg-red-600 w-full sm:w-auto"
               >
                 Logout
               </button>
             ) : (
               <a
                 href="http://localhost:5000/auth/steam"
-                className="metro-button"
+                className="metro-button w-full sm:w-auto"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Login with Steam
               </a>
@@ -196,7 +247,7 @@ function MainApp() {
         </nav>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 flex-grow">
+      <main className="max-w-7xl mx-auto p-4 flex-grow overflow-y-auto">
         <Routes>
           <Route
             path="/"
@@ -247,12 +298,12 @@ function MainApp() {
           <Route path="/search" element={<Search />} />
           <Route path="/heroes" element={<Heroes />} />
           <Route path="/match/:matchId" element={<MatchDetails />} />
-          <Route path="/pro-teams" element={<ProTeams />} />{" "}
-          {/* Новый маршрут */}
+          <Route path="/pro-teams" element={<ProTeams />} />
+          <Route path="/heroes/:heroId/matchups" element={<HeroMatchups />} />
         </Routes>
       </main>
 
-      <footer className="metro-footer">
+      <footer className="metro-footer bg-gray-100 dark:bg-gray-900 p-4 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto">
           <p className="text-sm">
             © 2025 Dota 2 Tracker. All rights reserved. Powered by{" "}

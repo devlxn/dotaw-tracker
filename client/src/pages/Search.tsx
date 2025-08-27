@@ -67,7 +67,6 @@ function Search() {
     return `${ranks[tier - 1]} ${subTier}` || "Unranked";
   };
 
-  // Автоматическая загрузка данных при наличии steamId в URL
   useEffect(() => {
     const steamIdFromUrl = searchParams.get("steamId");
     if (steamIdFromUrl && isValidSteamId(steamIdFromUrl)) {
@@ -108,7 +107,7 @@ function Search() {
 
       fetchPlayerData();
     }
-  }, [searchParams]); // Зависимость от searchParams для перезагрузки при изменении URL
+  }, [searchParams]);
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -225,34 +224,41 @@ function Search() {
   };
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-2 sm:p-4">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold text-blue-600 mb-2 text-center">
+        <h1 className="text-2xl font-semibold text-blue-600 mb-2 text-center sm:text-3xl">
           Player Search
         </h1>
-        <p className="text-center mb-2 text-gray-600 dark:text-gray-400">
+        <p className="text-center mb-2 text-gray-600 dark:text-gray-400 text-sm sm:text-base">
           Enter SteamID (e.g., 76561197960265728) or AccountID (e.g.,
           123456789).
         </p>
-        <form onSubmit={handleSearch} className="flex gap-2 mb-2 relative">
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-col sm:flex-row gap-2 mb-2 sm:mb-4 relative"
+        >
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Enter SteamID or AccountID"
-            className="metro-input flex-1"
+            className="metro-input flex-1 p-2 text-sm sm:text-base"
           />
           {query && (
             <button
               type="button"
               onClick={clearSearch}
-              className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm sm:text-base"
               aria-label="Clear search"
             >
               ✕
             </button>
           )}
-          <button type="submit" disabled={loading} className="metro-button">
+          <button
+            type="submit"
+            disabled={loading}
+            className="metro-button p-2 text-sm sm:text-base"
+          >
             {loading ? "Searching..." : "Search"}
           </button>
         </form>
@@ -262,57 +268,57 @@ function Search() {
           </div>
         )}
         {error && (
-          <p className="text-center text-red-500 dark:text-red-400 mb-2">
+          <p className="text-center text-red-500 dark:text-red-400 mb-2 text-sm sm:text-base">
             {error}
           </p>
         )}
         {player && (
           <div className="mb-4">
-            <div className="metro-card flex items-center gap-2 mb-2 p-2">
+            <div className="metro-card flex items-center gap-2 mb-2 p-2 sm:p-4">
               <img
                 src={player.avatar || "https://via.placeholder.com/50"}
                 alt={player.displayName}
-                className="w-12 h-12 rounded"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded"
               />
               <div>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                   {player.displayName}
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                   SteamID: {player.steamId}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                   Rank: {getRankName(player.rankTier)}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-              <div className="metro-card bg-blue-100 dark:bg-blue-900">
-                <h3 className="text-md font-medium text-blue-700 dark:text-blue-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 sm:mb-4">
+              <div className="metro-card bg-blue-100 dark:bg-blue-900 p-2 sm:p-4">
+                <h3 className="text-md font-medium text-blue-700 dark:text-blue-300 text-sm sm:text-base">
                   Total Matches
                 </h3>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {stats.totalMatches}
                 </p>
               </div>
-              <div className="metro-card bg-green-100 dark:bg-green-900">
-                <h3 className="text-md font-medium text-green-700 dark:text-green-300">
+              <div className="metro-card bg-green-100 dark:bg-green-900 p-2 sm:p-4">
+                <h3 className="text-md font-medium text-green-700 dark:text-green-300 text-sm sm:text-base">
                   Wins
                 </h3>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {stats.wins}
                 </p>
               </div>
-              <div className="metro-card bg-yellow-100 dark:bg-yellow-900">
-                <h3 className="text-md font-medium text-yellow-700 dark:text-yellow-300">
+              <div className="metro-card bg-yellow-100 dark:bg-yellow-900 p-2 sm:p-4">
+                <h3 className="text-md font-medium text-yellow-700 dark:text-yellow-300 text-sm sm:text-base">
                   Win Rate
                 </h3>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {winRate}%
                 </p>
               </div>
-              <div className="metro-card bg-red-100 dark:bg-red-900">
-                <h3 className="text-md font-medium text-red-700 dark:text-red-300">
+              <div className="metro-card bg-red-100 dark:bg-red-900 p-2 sm:p-4">
+                <h3 className="text-md font-medium text-red-700 dark:text-red-300 text-sm sm:text-base">
                   Average KDA
                 </h3>
                 <p className="text-lg text-gray-900 dark:text-gray-100">
@@ -321,8 +327,8 @@ function Search() {
               </div>
             </div>
             {matches.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium text-blue-600 mb-2">
+              <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+                <h3 className="text-lg font-medium text-blue-600 mb-2 text-center sm:text-xl">
                   Matches
                 </h3>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -332,9 +338,9 @@ function Search() {
                       <Link
                         key={match.match_id}
                         to={`/match/${match.match_id}?steamId=${player.steamId}`}
-                        className="metro-card bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        className="metro-card bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 p-2"
                       >
-                        <div className="flex items-center gap-2 p-2">
+                        <div className="flex items-center gap-2">
                           {hero && (
                             <img
                               src={`https://cdn.dota2.com/apps/dota2/images/heroes/${hero.name.replace(
@@ -345,25 +351,25 @@ function Search() {
                               className="w-6 h-6 object-contain"
                             />
                           )}
-                          <p className="text-gray-900 dark:text-gray-100">
+                          <p className="text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                             Hero:{" "}
                             {hero?.localized_name ||
                               `Unknown (${match.hero_id})`}
                           </p>
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 p-2">
+                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm p-1">
                           Duration: {Math.floor(match.duration / 60)}:
                           {(match.duration % 60).toString().padStart(2, "0")}
                         </p>
-                        <p className="text-gray-600 dark:text-gray-400 p-2">
+                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm p-1">
                           KDA: {match.kills}/{match.deaths}/{match.assists}
                         </p>
                         <p
                           className={
                             (match.radiant_win && match.player_slot < 128) ||
                             (!match.radiant_win && match.player_slot >= 128)
-                              ? "text-green-600 dark:text-green-400 p-2"
-                              : "text-red-600 dark:text-red-400 p-2"
+                              ? "text-green-600 dark:text-green-400 text-xs sm:text-sm p-1"
+                              : "text-red-600 dark:text-red-400 text-xs sm:text-sm p-1"
                           }
                         >
                           Result:
@@ -381,7 +387,7 @@ function Search() {
                   <button
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page === 1}
-                    className="metro-button bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400"
+                    className="metro-button bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-sm sm:text-base px-2 sm:px-4 py-1"
                   >
                     Previous
                   </button>
@@ -394,7 +400,7 @@ function Search() {
                           p === page
                             ? "bg-blue-500 text-white"
                             : "bg-gray-500 hover:bg-gray-600"
-                        }`}
+                        } text-sm sm:text-base px-2 sm:px-4 py-1`}
                       >
                         {p}
                       </button>
@@ -403,7 +409,7 @@ function Search() {
                   <button
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page === totalPages}
-                    className="metro-button bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400"
+                    className="metro-button bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-sm sm:text-base px-2 sm:px-4 py-1"
                   >
                     Next
                   </button>

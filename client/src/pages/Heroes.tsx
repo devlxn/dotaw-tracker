@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { heroes } from "../data/heroes";
+import { Link } from "react-router-dom";
 
 interface Hero {
   id: number;
@@ -93,18 +94,22 @@ function Heroes() {
               key={hero.id}
               className="metro-card bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
             >
-              <img
-                src={`https://cdn.dota2.com/apps/dota2/images/heroes/${hero.name.replace(
-                  "npc_dota_hero_",
-                  ""
-                )}_full.png`}
-                alt={hero.localized_name}
-                className="w-full h-32 object-cover rounded-t-lg"
-              />
+              <Link to={`/heroes/${hero.id}/matchups`}>
+                <img
+                  src={`https://cdn.dota2.com/apps/dota2/images/heroes/${hero.name.replace(
+                    "npc_dota_hero_",
+                    ""
+                  )}_full.png`}
+                  alt={hero.localized_name}
+                  className="w-full h-32 object-cover rounded-t-lg"
+                />
+              </Link>
               <div className="p-2">
-                <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
-                  {hero.localized_name}
-                </h3>
+                <Link to={`/heroes/${hero.id}/matchups`}>
+                  <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600">
+                    {hero.localized_name}
+                  </h3>
+                </Link>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Attribute: {attributeMap[hero.primary_attr]}
                 </p>
