@@ -112,8 +112,8 @@ passport.use(
   new SteamStrategy(
     {
       returnURL:
-        "https://dotaw-tracker-production.up.railway.app/auth/steam/return", // Синхронизировано с Railway
-      realm: "https://dotaw-tracker-production.up.railway.app/", // Синхронизировано с Railway
+        "https://dotaw-tracker-production.up.railway.app/auth/steam/return",
+      realm: "https://dotaw-tracker-production.up.railway.app/",
       apiKey: process.env.STEAM_API_KEY || "",
     },
     async (
@@ -200,7 +200,7 @@ app.get("/api/user", (req, res) => {
       .then((user) => {
         if (user) {
           console.log("Found user by steamId from session:", user);
-          req.user = user;
+          req.user = user; // Устанавливаем req.user для последующих middleware
           res.json(user);
         } else {
           console.log(
