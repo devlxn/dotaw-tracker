@@ -152,7 +152,7 @@ function MatchDetails() {
   const getHeroIcon = (heroId: number): string | null => {
     const hero = heroes.find((h) => h.id === heroId);
     return hero
-      ? `https://cdn.dota2.com/apps/dota2/images/heroes/${hero.name.replace(
+      ? `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.name.replace(
           "npc_dota_hero_",
           ""
         )}_icon.png`

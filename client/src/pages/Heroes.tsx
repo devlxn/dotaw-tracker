@@ -96,7 +96,7 @@ function Heroes() {
             >
               <Link to={`/heroes/${hero.id}/matchups`}>
                 <img
-                  src={`https://cdn.dota2.com/apps/dota2/images/heroes/${hero.name.replace(
+                  src={`https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.name.replace(
                     "npc_dota_hero_",
                     ""
                   )}_full.png`}

@@ -343,7 +343,7 @@ function Search() {
                         <div className="flex items-center gap-2">
                           {hero && (
                             <img
-                              src={`https://cdn.dota2.com/apps/dota2/images/heroes/${hero.name.replace(
+                              src={`https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.name.replace(
                                 "npc_dota_hero_",
                                 ""
                               )}_icon.png`}
