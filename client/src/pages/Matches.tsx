@@ -177,10 +177,10 @@ function Matches() {
                         <div className="flex items-center gap-2">
                           {hero && (
                             <img
-                              src={`/heroes/${hero.name.replace(
+                              src={`/images/${hero.name.replace(
                                 "npc_dota_hero_",
                                 ""
-                              )}_icon.png`}
+                              )}_full.png`}
                               alt={hero.localized_name}
                               className="w-6 h-6 object-contain"
                             />
