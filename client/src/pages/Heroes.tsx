@@ -99,11 +99,11 @@ function Heroes() {
                   src={`/images/${hero.name.replace(
                     "npc_dota_hero_",
                     ""
-                  )}_full.png`} // Путь к файлам в корневой images
+                  )}_full.png`} // Прямой путь к файлу
                   alt={hero.localized_name}
                   className="w-full h-32 object-cover rounded-t-lg"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/images/default.png"; // Фallback, если файла нет
+                    (e.target as HTMLImageElement).src = "/images/default.png"; // Фallback
                   }}
                 />
               </Link>
