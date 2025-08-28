@@ -1,11 +1,8 @@
 import express, { RequestHandler } from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { createClient } from "redis";
-import { RedisClientType } from "redis";
-import RedisStore from "connect-redis";
-import passport from "passport";
 import session from "express-session";
+import passport from "passport";
 import { Strategy as SteamStrategy } from "passport-steam";
 import cors from "cors";
 import axios from "axios";
@@ -46,20 +43,10 @@ interface SteamProfile {
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Redis клиент
-const redisClient: RedisClientType = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
-});
-redisClient.on("error", (err) => console.error("Redis error:", err));
-redisClient
-  .connect()
-  .then(() => console.log("Redis connected"))
-  .catch((err) => console.error("Redis connection error:", err));
-
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://dotaw-tracker.vercel.app", // Фронтенд на Vercel
     credentials: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -68,12 +55,11 @@ app.use(
 app.use(express.json());
 app.use(
   session({
-    store: new RedisStore({ client: redisClient, prefix: "sess:" }), // Исправленный синтаксис
     secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: false, // Измени на true в продакшене с HTTPS
       httpOnly: true,
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
@@ -122,8 +108,8 @@ passport.deserializeUser(async (id: string, done) => {
 passport.use(
   new SteamStrategy(
     {
-      returnURL: "http://localhost:5000/auth/steam/return",
-      realm: "http://localhost:5000/",
+      returnURL: "https://dota-tracker-backend.onrender.com/auth/steam/return", // Для Render
+      realm: "https://dota-tracker-backend.onrender.com/", // Для Render
       apiKey: process.env.STEAM_API_KEY || "",
     },
     async (
@@ -162,14 +148,16 @@ app.get("/auth/steam", passport.authenticate("steam"));
 
 app.get(
   "/auth/steam/return",
-  passport.authenticate("steam", { failureRedirect: "http://localhost:5173/" }),
+  passport.authenticate("steam", {
+    failureRedirect: "https://dotaw-tracker.vercel.app/",
+  }),
   (req, res) => {
     console.log("Steam auth return, user:", req.user);
     if (!req.user) {
       console.error("No user after authentication");
       return res.status(401).json({ error: "Authentication failed" });
     }
-    res.redirect("http://localhost:5173/profile");
+    res.redirect("https://dotaw-tracker.vercel.app/profile");
   }
 );
 
@@ -211,8 +199,11 @@ app.get("/api/user", (req, res) => {
           req.user = user;
           res.json(user);
         } else {
-          console.log("No user found for steamId:", req.session.passport.user);
-          res.json(null); // Возвращаем null вместо 401
+          console.log(
+            "No user found for steamId:",
+            req.session?.passport?.user || "undefined"
+          );
+          res.json(null);
         }
       })
       .catch((err) => {
@@ -221,7 +212,7 @@ app.get("/api/user", (req, res) => {
       });
   } else {
     console.log("No user or session data, returning null");
-    res.json(null); // Возвращаем null вместо 401
+    res.json(null);
   }
 });
 
@@ -247,15 +238,6 @@ app.get(
       }
       const STEAM_ID_BASE = BigInt("76561197960265728");
       const accountId = String(BigInt(steamId) - STEAM_ID_BASE);
-      const cacheKey = `matches:${steamId}:page:${page}:limit:${limit}`;
-
-      const cached = await redisClient.get(cacheKey);
-      if (cached !== null) {
-        console.log(
-          `Returning cached matches for SteamID: ${steamId}, Page: ${page}`
-        );
-        return res.json(JSON.parse(cached));
-      }
 
       console.log(
         `Fetching matches from OpenDota for SteamID: ${steamId} (AccountID: ${accountId}, Page: ${page})`
@@ -309,10 +291,6 @@ app.get(
         totalMatches,
       };
 
-      await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
-      console.log(
-        `Cached ${paginatedMatches.length} matches for SteamID: ${steamId}, Page: ${page}`
-      );
       res.json(result);
     } catch (err: any) {
       console.error(`Error fetching matches for SteamID: ${steamId}`, {
@@ -335,12 +313,6 @@ app.get(
       if (!/^\d+$/.test(matchId)) {
         return res.status(400).json({ error: "Invalid Match ID format" });
       }
-      const cacheKey = `match:${matchId}`;
-      const cached = await redisClient.get(cacheKey);
-      if (cached) {
-        console.log(`Returning cached match data for MatchID: ${matchId}`);
-        return res.json(JSON.parse(cached));
-      }
 
       console.log(`Fetching match data from OpenDota for MatchID: ${matchId}`);
       const response = await axios.get(
@@ -355,8 +327,6 @@ app.get(
           .json({ error: "Invalid match data from OpenDota" });
       }
 
-      await redisClient.setEx(cacheKey, 3600, JSON.stringify(match));
-      console.log(`Cached match data for MatchID: ${matchId}`);
       res.json(match);
     } catch (err: any) {
       console.error(`Error fetching match data for MatchID: ${matchId}`, {
@@ -382,13 +352,6 @@ app.get(
     try {
       const queryStr = String(query).trim();
       console.log(`Processing query (AccountID): ${queryStr}`);
-      const cacheKey = `search:${queryStr.toLowerCase()}`;
-      const cached = await redisClient.get(cacheKey);
-      if (cached) {
-        console.log(`Returning cached search for AccountID: ${queryStr}`);
-        return res.json(JSON.parse(cached));
-      }
-
       const STEAM_ID_BASE = BigInt("76561197960265728");
       let result: any = null;
 
@@ -446,8 +409,6 @@ app.get(
         return res.status(404).json({ error: "Player not found" });
       }
 
-      await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
-      console.log(`Search result cached for AccountID: ${queryStr}`);
       res.json(result);
     } catch (err: any) {
       console.error("Search error:", {
