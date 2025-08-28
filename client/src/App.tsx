@@ -23,13 +23,16 @@ interface User {
   avatar: string;
 }
 
+// Базовый URL бэкенда
+const API_URL = "https://dotaw-tracker-production.up.railway.app";
+
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/user", { withCredentials: true })
+      .get(`${API_URL}/api/user`, { withCredentials: true })
       .then((res) => {
         setUser(res.data || null);
         setLoading(false);
@@ -60,7 +63,7 @@ function MainApp() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/user", { withCredentials: true })
+      .get(`${API_URL}/api/user`, { withCredentials: true })
       .then((res) => {
         setUser(res.data || null);
         setError(null);
@@ -79,7 +82,7 @@ function MainApp() {
 
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:5000/auth/logout", {
+      await axios.get(`${API_URL}/auth/logout`, {
         withCredentials: true,
       });
       setUser(null);
@@ -107,7 +110,7 @@ function MainApp() {
           onClick={() => {
             setError(null);
             axios
-              .get("http://localhost:5000/api/user", { withCredentials: true })
+              .get(`${API_URL}/api/user`, { withCredentials: true })
               .then((res) => setUser(res.data || null))
               .catch((err) => setError(err.message));
           }}
@@ -236,7 +239,7 @@ function MainApp() {
               </button>
             ) : (
               <a
-                href="http://localhost:5000/auth/steam"
+                href={`${API_URL}/auth/steam`}
                 className="metro-button w-full sm:w-auto"
                 onClick={() => setIsMenuOpen(false)}
               >
