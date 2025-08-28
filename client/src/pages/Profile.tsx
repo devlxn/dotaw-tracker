@@ -8,7 +8,6 @@ interface UserProfile {
   rankTier?: number;
 }
 
-// Базовый URL бэкенда
 const API_URL = "https://dotaw-tracker-production.up.railway.app";
 
 function Profile() {
@@ -17,18 +16,22 @@ function Profile() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    console.log("Fetching user from:", `${API_URL}/api/user`);
     axios
       .get(`${API_URL}/api/user`, { withCredentials: true })
       .then((res) => {
+        console.log("User data received:", res.data);
         const currentUser = res.data;
         if (currentUser && currentUser.steamId) {
           setUser(currentUser);
           const accountId = (
             BigInt(currentUser.steamId) - BigInt("76561197960265728")
           ).toString();
+          console.log("Fetching rank for accountId:", accountId);
           axios
             .get(`https://api.opendota.com/api/players/${accountId}`)
             .then((rankRes) => {
+              console.log("Rank data:", rankRes.data);
               if (rankRes.data && rankRes.data.rank_tier) {
                 setUser((prev) =>
                   prev ? { ...prev, rankTier: rankRes.data.rank_tier } : prev
@@ -41,7 +44,7 @@ function Profile() {
       })
       .catch((err) => {
         console.error("Error fetching user:", err);
-        setError("Failed to fetch user");
+        setError("Failed to fetch user data");
         setLoading(false);
       });
   }, []);
