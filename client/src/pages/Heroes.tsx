@@ -96,12 +96,15 @@ function Heroes() {
             >
               <Link to={`/heroes/${hero.id}/matchups`}>
                 <img
-                  src={`../images/${hero.name.replace(
+                  src={`/images/${hero.name.replace(
                     "npc_dota_hero_",
                     ""
-                  )}_full.png`}
+                  )}_full.png`} // Путь к файлам в корневой images
                   alt={hero.localized_name}
                   className="w-full h-32 object-cover rounded-t-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/images/default.png"; // Фallback, если файла нет
+                  }}
                 />
               </Link>
               <div className="p-2">
