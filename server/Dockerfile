@@ -1,7 +1,23 @@
+# Базовый образ
 FROM node:18-alpine
-WORKDIR /server
-COPY package*.json ./
-RUN npm install
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем package.json и package-lock.json для сервера
+COPY server/package.json server/package-lock.json ./server/
+
+# Устанавливаем зависимости
+RUN cd server && npm install
+
+# Копируем весь проект
 COPY . .
-EXPOSE 5000
-CMD ["npm", "start"]
+
+# Переходим в папку server
+WORKDIR /app/server
+
+# Компилируем TypeScript
+RUN npm run build
+
+# Запускаем приложение
+CMD ["node", "dist/index.js"]
