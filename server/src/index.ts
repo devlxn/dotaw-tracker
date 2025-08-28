@@ -108,8 +108,9 @@ passport.deserializeUser(async (id: string, done) => {
 passport.use(
   new SteamStrategy(
     {
-      returnURL: "https://dota-tracker-backend.onrender.com/auth/steam/return", // Для Render
-      realm: "https://dota-tracker-backend.onrender.com/", // Для Render
+      returnURL:
+        "https://dotaw-tracker-production.up.railway.app/auth/steam/return", // Для Render
+      realm: "https://dotaw-tracker-production.up.railway.app/", // Для Render
       apiKey: process.env.STEAM_API_KEY || "",
     },
     async (
