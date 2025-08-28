@@ -59,10 +59,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Измени на true в продакшене с HTTPS
+      secure: process.env.NODE_ENV === "production", // true для HTTPS
+      sameSite: "none", // Для работы с разными доменами (Vercel и Railway)
       httpOnly: true,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
