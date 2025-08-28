@@ -32,9 +32,12 @@ function Matches() {
   useEffect(() => {
     const fetchUserAndMatches = async () => {
       try {
-        const userResponse = await axios.get("http://localhost:5000/api/user", {
-          withCredentials: true,
-        });
+        const userResponse = await axios.get(
+          "https://dotaw-tracker-production.up.railway.app/api/user",
+          {
+            withCredentials: true,
+          }
+        );
         const currentUser = userResponse.data;
         if (currentUser && currentUser.steamId) {
           setUser(currentUser);
@@ -59,7 +62,7 @@ function Matches() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/matches/${steamId}`,
+        `https://dotaw-tracker-production.up.railway.app/api/matches/${steamId}`,
         {
           params: { page, limit: 20 },
           withCredentials: true,

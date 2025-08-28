@@ -7,7 +7,6 @@ import { Strategy as SteamStrategy } from "passport-steam";
 import cors from "cors";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import cookieParser from "cookie-parser"; // Добавлено
 import User from "./models/User";
 import Match from "./models/Match";
 
@@ -48,29 +47,25 @@ const port = process.env.PORT || 5000;
 app.use(
   cors({
     origin: "https://dotaw-tracker.vercel.app", // Фронтенд на Vercel
-    credentials: true, // Разрешить передачу куки
+    credentials: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
-app.use(cookieParser()); // Добавлено для работы с req.cookies
-
-// Настройка сессий
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // true в продакшене с HTTPS
+      secure: false, // Измени на true в продакшене с HTTPS
       httpOnly: true,
-      sameSite: "none", // Для кросс-доменных запросов
-      maxAge: 24 * 60 * 60 * 1000, // 24 часа
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
-
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -114,8 +109,8 @@ passport.use(
   new SteamStrategy(
     {
       returnURL:
-        "https://dotaw-tracker-production.up.railway.app/auth/steam/return",
-      realm: "https://dotaw-tracker-production.up.railway.app/",
+        "https://dotaw-tracker-production.up.railway.app/auth/steam/return", // Для Render
+      realm: "https://dotaw-tracker-production.up.railway.app/", // Для Render
       apiKey: process.env.STEAM_API_KEY || "",
     },
     async (
@@ -190,7 +185,7 @@ app.get("/api/user", (req, res) => {
     "User request - Session:",
     req.session,
     "Passport user:",
-    req.user,
+    req.session?.passport?.user,
     "Cookies:",
     req.cookies
   );
@@ -202,14 +197,14 @@ app.get("/api/user", (req, res) => {
       .then((user) => {
         if (user) {
           console.log("Found user by steamId from session:", user);
-          req.user = user; // Устанавливаем req.user для последующих middleware
+          req.user = user;
           res.json(user);
         } else {
           console.log(
             "No user found for steamId:",
             req.session?.passport?.user || "undefined"
           );
-          res.status(401).json({ message: "Not authenticated" });
+          res.json(null);
         }
       })
       .catch((err) => {
@@ -218,7 +213,7 @@ app.get("/api/user", (req, res) => {
       });
   } else {
     console.log("No user or session data, returning null");
-    res.status(401).json({ message: "Not authenticated" });
+    res.json(null);
   }
 });
 
@@ -428,13 +423,6 @@ app.get(
   }
 );
 
-// Поддержка постоянной работы сервера
-const keepAlive = () =>
-  setInterval(() => {
-    console.log("Keeping server alive:", new Date().toISOString());
-  }, 5 * 60 * 1000); // Пинг каждые 5 минут
-
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  keepAlive(); // Запуск механизма keep-alive
+  console.log(`Server running on http://localhost:${port}`);
 });

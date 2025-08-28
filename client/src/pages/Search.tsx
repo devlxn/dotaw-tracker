@@ -80,7 +80,7 @@ function Search() {
         try {
           const accountId = convertSteamIdToAccountId(steamIdFromUrl);
           const response = await axios.get(
-            `http://localhost:5000/api/search?query=${accountId}`,
+            `https://dotaw-tracker-production.up.railway.app/api/search?query=${accountId}`,
             { withCredentials: true }
           );
           const data = response.data;
@@ -135,7 +135,7 @@ function Search() {
       }
 
       const response = await axios.get(
-        `http://localhost:5000/api/search?query=${accountId}`,
+        `https://dotaw-tracker-production.up.railway.app/api/search?query=${accountId}`,
         { withCredentials: true }
       );
       const data = response.data;
@@ -167,7 +167,7 @@ function Search() {
   const fetchMatches = async (steamId: string, page: number) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/matches/${steamId}`,
+        `https://dotaw-tracker-production.up.railway.app/api/matches/${steamId}`,
         {
           params: { page, limit: 20 },
           withCredentials: true,
