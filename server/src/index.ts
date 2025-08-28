@@ -7,6 +7,7 @@ import { Strategy as SteamStrategy } from "passport-steam";
 import cors from "cors";
 import axios from "axios";
 import axiosRetry from "axios-retry";
+import cookieParser from "cookie-parser"; // Добавлено
 import User from "./models/User";
 import Match from "./models/Match";
 
@@ -53,6 +54,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser()); // Добавлено для работы с req.cookies
 
 // Настройка сессий
 app.use(
@@ -190,7 +192,7 @@ app.get("/api/user", (req, res) => {
     "Passport user:",
     req.user,
     "Cookies:",
-    req.headers.cookie
+    req.cookies
   );
   if (req.user) {
     console.log("Returning user from req.user:", req.user);
