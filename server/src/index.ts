@@ -47,25 +47,28 @@ const port = process.env.PORT || 5000;
 app.use(
   cors({
     origin: "https://dotaw-tracker.vercel.app", // Фронтенд на Vercel
-    credentials: true,
+    credentials: true, // Разрешить передачу куки
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
+
+// Настройка сессий
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "hBlGYtAWhM",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Измени на true в продакшене с HTTPS
+      secure: process.env.NODE_ENV === "production", // true в продакшене с HTTPS
       httpOnly: true,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "none", // Для кросс-доменных запросов
+      maxAge: 24 * 60 * 60 * 1000, // 24 часа
     },
   })
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -109,8 +112,8 @@ passport.use(
   new SteamStrategy(
     {
       returnURL:
-        "https://dotaw-tracker-production.up.railway.app/auth/steam/return", // Для Render
-      realm: "https://dotaw-tracker-production.up.railway.app/", // Для Render
+        "https://dotaw-tracker-production.up.railway.app/auth/steam/return", // Синхронизировано с Railway
+      realm: "https://dotaw-tracker-production.up.railway.app/", // Синхронизировано с Railway
       apiKey: process.env.STEAM_API_KEY || "",
     },
     async (
@@ -185,9 +188,9 @@ app.get("/api/user", (req, res) => {
     "User request - Session:",
     req.session,
     "Passport user:",
-    req.session?.passport?.user,
+    req.user,
     "Cookies:",
-    req.cookies
+    req.headers.cookie
   );
   if (req.user) {
     console.log("Returning user from req.user:", req.user);
@@ -204,7 +207,7 @@ app.get("/api/user", (req, res) => {
             "No user found for steamId:",
             req.session?.passport?.user || "undefined"
           );
-          res.json(null);
+          res.status(401).json({ message: "Not authenticated" });
         }
       })
       .catch((err) => {
@@ -213,7 +216,7 @@ app.get("/api/user", (req, res) => {
       });
   } else {
     console.log("No user or session data, returning null");
-    res.json(null);
+    res.status(401).json({ message: "Not authenticated" });
   }
 });
 
@@ -423,6 +426,13 @@ app.get(
   }
 );
 
+// Поддержка постоянной работы сервера
+const keepAlive = () =>
+  setInterval(() => {
+    console.log("Keeping server alive:", new Date().toISOString());
+  }, 5 * 60 * 1000); // Пинг каждые 5 минут
+
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
+  keepAlive(); // Запуск механизма keep-alive
 });
