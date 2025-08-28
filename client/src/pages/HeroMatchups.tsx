@@ -113,7 +113,7 @@ function HeroMatchups() {
                     className="flex items-center p-1 sm:p-2 bg-gray-700 dark:bg-gray-600 rounded"
                   >
                     <img
-                      src={`https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${opponentHero?.name.replace(
+                      src={`/heroes/${opponentHero?.name.replace(
                         "npc_dota_hero_",
                         ""
                       )}_sb.png`}
@@ -206,7 +206,7 @@ function HeroMatchups() {
                     className="flex items-center p-1 sm:p-2 bg-gray-700 dark:bg-gray-600 rounded"
                   >
                     <img
-                      src={`https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${opponentHero?.name.replace(
+                      src={`/heroes/${opponentHero?.name.replace(
                         "npc_dota_hero_",
                         ""
                       )}_sb.png`}
