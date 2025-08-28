@@ -15,7 +15,9 @@ function Profile() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/user", { withCredentials: true })
+      .get("https://dotaw-tracker-production.up.railway.app/api/user", {
+        withCredentials: true,
+      })
       .then((res) => {
         const currentUser = res.data;
         if (currentUser && currentUser.steamId) {
@@ -66,7 +68,10 @@ function Profile() {
             <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
               Not Logged In
             </h2>
-            <a href="http://localhost:5000/auth/steam" className="metro-button">
+            <a
+              href="https://dotaw-tracker-production.up.railway.app/auth/steam"
+              className="metro-button"
+            >
               Login with Steam
             </a>
           </div>
