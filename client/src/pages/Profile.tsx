@@ -8,6 +8,9 @@ interface UserProfile {
   rankTier?: number;
 }
 
+// Базовый URL бэкенда
+const API_URL = "https://dotaw-tracker-production.up.railway.app";
+
 function Profile() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +18,7 @@ function Profile() {
 
   useEffect(() => {
     axios
-      .get("https://dotaw-tracker-production.up.railway.app/api/user", {
-        withCredentials: true,
-      })
+      .get(`${API_URL}/api/user`, { withCredentials: true })
       .then((res) => {
         const currentUser = res.data;
         if (currentUser && currentUser.steamId) {
@@ -68,10 +69,7 @@ function Profile() {
             <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
               Not Logged In
             </h2>
-            <a
-              href="https://dotaw-tracker-production.up.railway.app/auth/steam"
-              className="metro-button"
-            >
+            <a href={`${API_URL}/auth/steam`} className="metro-button">
               Login with Steam
             </a>
           </div>
