@@ -17,23 +17,22 @@ import MatchDetails from "./pages/MatchDetails";
 import ProTeams from "./pages/ProTeams";
 import HeroMatchups from "./pages/HeroMatchups";
 
-// Интерфейс пользователя
 interface User {
   steamId: string;
   displayName: string;
   avatar: string;
 }
 
-// Компонент защищенного маршрута
+// Базовый URL бэкенда
+const API_URL = "https://dotaw-tracker-production.up.railway.app";
+
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios
-      .get("https://dotaw-tracker-production.up.railway.app/api/user", {
-        withCredentials: true,
-      })
+      .get(`${API_URL}/api/user`, { withCredentials: true })
       .then((res) => {
         setUser(res.data || null);
         setLoading(false);
@@ -64,9 +63,7 @@ function MainApp() {
 
   useEffect(() => {
     axios
-      .get("https://dotaw-tracker-production.up.railway.app/api/user", {
-        withCredentials: true,
-      })
+      .get(`${API_URL}/api/user`, { withCredentials: true })
       .then((res) => {
         setUser(res.data || null);
         setError(null);
@@ -85,12 +82,9 @@ function MainApp() {
 
   const handleLogout = async () => {
     try {
-      await axios.get(
-        "https://dotaw-tracker-production.up.railway.app/auth/logout",
-        {
-          withCredentials: true,
-        }
-      );
+      await axios.get(`${API_URL}/auth/logout`, {
+        withCredentials: true,
+      });
       setUser(null);
       navigate("/");
     } catch (err) {
@@ -116,9 +110,7 @@ function MainApp() {
           onClick={() => {
             setError(null);
             axios
-              .get("https://dotaw-tracker-production.up.railway.app/api/user", {
-                withCredentials: true,
-              })
+              .get(`${API_URL}/api/user`, { withCredentials: true })
               .then((res) => setUser(res.data || null))
               .catch((err) => setError(err.message));
           }}
@@ -132,35 +124,6 @@ function MainApp() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Вставка Яндекс.Метрики */}
-      {location.pathname === "/" && (
-        <>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function(m,e,t,r,i,k,a){
-                  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-                  m[i].l=1*new Date();
-                  for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-                  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-                })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=104186228', 'ym');
-
-                ym(104186228, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
-              `,
-            }}
-          />
-          <noscript>
-            <div>
-              <img
-                src="https://mc.yandex.ru/watch/104186228"
-                style={{ position: "absolute", left: "-9999px" }}
-                alt=""
-              />
-            </div>
-          </noscript>
-        </>
-      )}
-
       <header className="bg-gray-100 dark:bg-gray-900 p-4 border-b border-gray-200 dark:border-gray-800 z-50">
         <nav className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
@@ -276,7 +239,7 @@ function MainApp() {
               </button>
             ) : (
               <a
-                href="https://dotaw-tracker-production.up.railway.app/auth/steam"
+                href={`${API_URL}/auth/steam`}
                 className="metro-button w-full sm:w-auto"
                 onClick={() => setIsMenuOpen(false)}
               >
