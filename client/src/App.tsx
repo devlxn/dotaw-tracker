@@ -24,7 +24,7 @@ interface User {
 }
 
 // Базовый URL бэкенда
-const API_URL = "https://dotaw-tracker-production.up.railway.app";
+const API_URL = "https://dotaw-tracker.onrender.com";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const [user, setUser] = useState<User | null>(null);
