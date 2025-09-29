@@ -108,8 +108,8 @@ passport.use(
   new SteamStrategy(
     {
       returnURL:
-        "https://dotaw-tracker-production.up.railway.app/auth/steam/return", // Для Render
-      realm: "https://dotaw-tracker-production.up.railway.app/", // Для Render
+        "https://dotaw-tracker.onrender.com/auth/steam/return", // Для Render
+      realm: "https://dotaw-tracker.onrender.com/", // Для Render
       apiKey: process.env.STEAM_API_KEY || "",
     },
     async (
