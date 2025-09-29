@@ -50,7 +50,7 @@ function MatchDetails() {
       setError("");
       try {
         const response = await axios.get(
-          `https://dotaw-tracker-production.up.railway.app/api/match/${matchId}`
+          `https://dotaw-tracker.onrender.com/api/match/${matchId}`
         );
         setMatch(response.data);
       } catch (err: unknown) {
