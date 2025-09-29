@@ -33,7 +33,7 @@ function Matches() {
     const fetchUserAndMatches = async () => {
       try {
         const userResponse = await axios.get(
-          "https://dotaw-tracker-production.up.railway.app/api/user",
+          "https://dotaw-tracker.onrender.com/api/user",
           {
             withCredentials: true,
           }
@@ -62,7 +62,7 @@ function Matches() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `https://dotaw-tracker-production.up.railway.app/api/matches/${steamId}`,
+        `https://dotaw-tracker.onrender.com/api/matches/${steamId}`,
         {
           params: { page, limit: 20 },
           withCredentials: true,
