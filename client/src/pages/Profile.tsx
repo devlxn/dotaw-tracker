@@ -8,7 +8,7 @@ interface UserProfile {
   rankTier?: number;
 }
 
-const API_URL = "https://dotaw-tracker-production.up.railway.app";
+const API_URL = "https://dotaw-tracker.onrender.com";
 
 function Profile() {
   const [user, setUser] = useState<UserProfile | null>(null);
